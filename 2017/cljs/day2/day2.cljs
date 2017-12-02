@@ -19,8 +19,7 @@
 (defn- evenly-divisible [line]
   (first (for [x line
                y line
-               :when (and (not= x y)
-                          (> x y)
+               :when (and (> x y)
                           (zero? (rem x y)))]
            (/ x y))))
 
