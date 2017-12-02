@@ -12,7 +12,7 @@
       (->> (map #(string/split % "\t"))
            (map (partial map int)))))
 
-(defn- max-min-distance [line]
+(defn- greatest-distance [line]
   (- (apply max line)
      (apply min line)))
 
@@ -26,5 +26,5 @@
 (defn checksum [input line-checksum-fn]
   (reduce + (map line-checksum-fn (listify-input input))))
 
-(println (checksum input max-min-distance))
+(println (checksum input greatest-distance))
 (println (checksum input evenly-divisible))
