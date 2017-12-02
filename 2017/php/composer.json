@@ -1,0 +1,13 @@
+{
+  "name": "cmack/advent-of-code-2017",
+  "description": "Advent Of Code 2017",
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "AdventOfCode2017\\": ""
+    },
+    "files": [
+      "Day1/puzzle1.php"
+    ]
+  }
+}
