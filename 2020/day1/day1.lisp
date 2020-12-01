@@ -205,10 +205,8 @@
         :when match
           :return (list i match)))
 
-
 ;;; Day 1 - star 1
 (apply #'* (find-sum-pairs input-1 2020))
-
 
 (defun find-sum-tris (seq target-sum)
   (loop :for i :in seq
@@ -218,3 +216,29 @@
 
 ;;; Day 1 - star 2
 (apply #'* (find-sum-tris input-1 2020))
+
+;;; faster with vectors, optimization and type hints, and sorting
+(defun find-sum-pairs-vec (vec target-sum)
+  (declare (optimize (speed 3))
+           (type fixnum target-sum)
+           (type simple-vector vec))
+  (loop :for i :of-type fixnum :across vec
+        :for match = (find (- target-sum i) vec :from-end t)
+        :when match
+          :return (list i match)))
+;;; star 1
+(apply #'* (find-sum-pairs-vec (coerce (sort (copy-seq input-1) #'<) 'vector)
+                               2020))
+
+(defun find-sum-tris-vec (vec target-sum)
+  (declare (optimize (speed 3))
+           (type fixnum target-sum)
+           (type simple-vector vec))
+  (loop :for i :of-type fixnum :across vec
+        :for match = (find-sum-pairs-vec vec (- target-sum i))
+        :when match
+          :return (nconc (list i) match)))
+
+;;; star 2
+(apply #'* (find-sum-tris-vec (coerce (sort (copy-seq input-1) #'<) 'vector)
+                              2020))
