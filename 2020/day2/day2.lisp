@@ -38,6 +38,8 @@
 
 ;;; Star 1
 (valid-counts (parse-input-file "../inputs/day2-input.txt") #'valid-p)
+(valid-counts-2 (parse-input-file "../inputs/day2-input.txt") #'valid-p)
 
 ;;; Star 2
 (valid-counts (parse-input-file "../inputs/day2-input.txt") #'valid-p-2)
+(valid-counts-2 (parse-input-file "../inputs/day2-input.txt") #'valid-p-2)
