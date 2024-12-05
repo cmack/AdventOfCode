@@ -80,6 +80,27 @@
 
     ))
 
+(defun toposorter (ordering rules)
+  (let ((narrowed-rules
+          (remove-if-not (lambda (rule) (member rule ordering))
+                         rules :key #'car)))
+    (s:toposort narrowed-rules)))
+
+(defun order (ordering sorter-fn)
+  (sort (copy-seq ordering) sorter-fn))
+
+(defun challenge-2 (input)
+  (multiple-value-bind (rules-table orderings) (parsed-input input)
+    (multiple-value-bind (correct incorrect)
+        (s:partition (lambda (x) (sequential-p x rules-table)) orderings)
+      (declare (ignore correct))
+      (let ((rules (parse-rules (split-rules input))))
+        (reduce #'+
+                (mapcar #'middle-elt
+                        (mapcar (lambda (x)
+                                  (order x (toposorter x rules)))
+                                incorrect)))))))
+
 
 ;; (defun challenge-1 (input)
 ;;   (multiple-value-bind (raw-rules raw-orderings) (split-rules input)
