@@ -106,3 +106,46 @@
 ;;; search reverse each line
 ;;; transpose
 ;;; do again
+
+;;; Nevermind about displaced arrays. I need "conformally displaced arrays"
+;;; which was only part of LispMs and not CL.
+;;; Next idea, find each #\A position, then search around for SAM and MAS
+
+(defun 2D-search (2d-array string)
+  (let ((search-vec (make-array (array-total-size 2d-array)
+                                :element-type 'character
+                                :displaced-to 2d-array)))
+    (loop for i below (length search-vec)
+          for start = 0 then (1+ next)
+          for next = (search string search-vec :start2 start)
+          while next
+          collect next)))
+
+(defun A-positions (2d-array)
+  (let* ((dim (array-dimension 2d-array 0))
+        (dim-1 (1- dim)))
+    (flet ((on-border-p (index)
+             (multiple-value-bind (row col) (floor index dim)
+               (or (zerop col)
+                   (zerop row)
+                   (= col dim-1)
+                   (= row dim-1)))))
+      (remove-if #'on-border-p
+                 (2D-search 2d-array "A")))))
+
+(defun x-vals (board index)
+  (let ((dim (array-dimension board 0)))
+    (list (row-major-aref board (- index dim 1))
+          (row-major-aref board (- index dim -1))
+          (row-major-aref board (+ index dim -1))
+          (row-major-aref board (+ index dim 1)))))
+
+(defun winner-p (list)
+  (null (set-difference '(#\S #\M) list)))
+
+(defun challenge-2 (input)
+  (loop with board = (make-board input)
+        for a in (A-positions board)
+        for (tl tr bl br) = (x-vals board a)
+        counting (and (winner-p (list tl br))
+                      (winner-p (list tr bl)))))
