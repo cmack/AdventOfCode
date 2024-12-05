@@ -140,12 +140,14 @@
           (row-major-aref board (+ index dim -1))
           (row-major-aref board (+ index dim 1)))))
 
-(defun winner-p (list)
-  (null (set-difference '(#\S #\M) list)))
+(defun winner-p (x-val)
+  (flet ((mas-p (list)
+           (null (set-difference '(#\S #\M) list))))
+    (destructuring-bind (tl tr bl br) x-val
+      (and (mas-p (list tl br))
+           (mas-p (list tr bl))))))
 
 (defun challenge-2 (input)
   (loop with board = (make-board input)
         for a in (A-positions board)
-        for (tl tr bl br) = (x-vals board a)
-        counting (and (winner-p (list tl br))
-                      (winner-p (list tr bl)))))
+        counting (winner-p (x-vals board a))))
