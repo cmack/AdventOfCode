@@ -1,6 +1,6 @@
 (uiop:define-package #:cmack.advent-of-code.2024.day4
     (:use :cl)
-    (:local-nicknames (:s :serapeum/bundle)))
+  (:local-nicknames (:s :serapeum/bundle)))
 
 (in-package #:cmack.advent-of-code.2024.day4)
 
@@ -29,8 +29,8 @@
 
 (defun stringify (2d-array)
   (destructuring-bind (row col) (array-dimensions 2d-array)
-   (loop for i below row
-         collect  (loop for j below col
+    (loop for i below row
+          collect (loop for j below col
                         collect (aref 2d-array i j) into x
                         finally (return (coerce x 'string))))))
 
@@ -123,7 +123,7 @@
 
 (defun A-positions (2d-array)
   (let* ((dim (array-dimension 2d-array 0))
-        (dim-1 (1- dim)))
+         (dim-1 (1- dim)))
     (flet ((on-border-p (index)
              (multiple-value-bind (row col) (floor index dim)
                (or (zerop col)
