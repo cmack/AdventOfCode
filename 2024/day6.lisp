@@ -24,10 +24,18 @@
         when guard
           return (list guard i)))
 
+;; Unused in the in end. Thought it might be used for attempt optimization.
+;; (defun find-obstacles (board)
+;;   (loop for i from 0 below (length board)
+;;         for obs = (search "#" (svref board i) :test #'string=)
+;;         when obs
+;;           collect (list obs i) into obstacles
+;;         finally (return obstacles)))
+
 (defun find-obstacle-right (board start)
   (destructuring-bind (x y) (first (last start))
     (let ((hit (search "#" (aref board y)
-                       :test #'string= :start2 (1+ x))))
+                       :test #'string= :start2 x)))
       (if hit
           (list (1- hit) y)
           (list (length board) y)))))
@@ -35,7 +43,7 @@
 (defun find-obstacle-left (board start)
   (destructuring-bind (x y) (first (last start))
     (let ((hit (search "#" (aref board y)
-                       :test #'string= :end2 (1- x) :from-end t)))
+                       :test #'string= :end2 x :from-end t)))
       (if hit
           (list (1+ hit) y)
           (list -1 y)))))
@@ -58,12 +66,12 @@
                    return (1- i))))
       (list x (or hit (length board))))))
 
-(defun next-direction(fn)
-  (let ((next (s:alist-hash-table
-               `((,#'find-obstacle-up . ,#'find-obstacle-right)
-                 (,#'find-obstacle-right . ,#'find-obstacle-down)
-                 (,#'find-obstacle-down . ,#'find-obstacle-left)
-                 (,#'find-obstacle-left . ,#'find-obstacle-up)))))
+(let ((next (s:alist-hash-table
+             `((,#'find-obstacle-up . ,#'find-obstacle-right)
+               (,#'find-obstacle-right . ,#'find-obstacle-down)
+               (,#'find-obstacle-down . ,#'find-obstacle-left)
+               (,#'find-obstacle-left . ,#'find-obstacle-up)))))
+  (defun next-direction (fn)
     (gethash fn next #'find-obstacle-up)))
 
 (defun expand (path next-stop)
@@ -73,10 +81,12 @@
       (let* ((dy (- y2 y1))
              (dx (- x2 x1))
              (n (1+ (max (abs dy) (abs dx)))))
-        (append path
-                (mapcar #'list
-                        (s:iota n :start x1 :step (signum dx))
-                        (s:iota n :start y1 :step (signum dy))))))))
+        (if (= n 1)
+            path
+            (append path
+                    (mapcar #'list
+                            (s:iota n :start x1 :step (signum dx))
+                            (s:iota n :start y1 :step (signum dy)))))))))
 (defun expand-all (path)
   (remove-duplicates (reduce #'expand path
                              :start 1
@@ -96,17 +106,40 @@
 (defun run-board (board)
   (labels ((runner (start direction-fn)
              (let ((next (funcall direction-fn board start)))
-               (print start)
-               (if (in-bounds-p board next)
-                   (runner (append start (list next))
-                           (next-direction direction-fn))
-                   (expand-all
-                    (append start
-                            (list (clamp-to-board board next))))))))
+               (cond ((cycles-p start) :cycles)
+                     ((in-bounds-p board next)
+                      (runner (append start (list next))
+                              (next-direction direction-fn)))
+                     (t (append start
+                                (list (clamp-to-board board next))))))))
     (runner (list (find-start board)) #'find-obstacle-up)))
 
 (defun challenge-1 (input)
-  (length (run-board input)))
+  (length (expand-all (run-board input))))
+
+(defun try-obstacle (board position)
+  (let* ((copy (copy-seq board))
+         (row (aref copy (second position)))
+         (row-copy (copy-seq row)))
+    (setf (aref row-copy (first position)) #\#)
+    (setf (aref copy (second position)) row-copy)
+    copy))
+
+(defun cycles-p (path)
+  ;; a list of two vertices will be an edge
+  (let* ((edges (mapcar #'list path (cdr path))))
+    ;; we have a cycle if the last appended edge has already been traveled.
+    (member (first (last edges))
+            (butlast edges) :test #'equal)))
+
+
+(defun challenge-2 (input)
+  (length (loop
+            with start = (find-start input)
+            for xy in (remove start (expand-all (run-board input)) :test #'equal)
+            for test-obstacle = (try-obstacle input xy)
+            when (eq :cycles (run-board test-obstacle))
+              collect xy)))
 
 (defparameter *test* "....#.....
 .........#
@@ -115,6 +148,17 @@
 .......#..
 ..........
 .#..^.....
+........#.
+#.........
+......#...")
+
+(defparameter *cycle* "....#.....
+.........#
+..........
+..#.......
+.......#..
+..........
+.#.#^.....
 ........#.
 #.........
 ......#...")
