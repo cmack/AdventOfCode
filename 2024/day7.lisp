@@ -54,8 +54,55 @@
 
         ))
 
+(defun numcat (x y)
+  (declare (fixnum x y) (optimize (speed 3)))
+  (+ (* x (expt 10 (1+ (the fixnum (truncate (log y 10))))))
+     y))
+
+(defun op-graph2 (input)
+  (labels ((scan-next (args)
+             (list* (first args)
+                    (last *original-ops* (1- (length args)))))
+
+           (scan-mul (args &optional (target nil))
+             (if (< (length args) 2)
+                 (when (member target args :test #'=)
+                     target)
+                 (let* ((next (scan-next args))
+                        (next-sums (s:scan #'+ next))
+                        (next-muls (s:scan #'* next))
+                        (next-cats (s:scan #'numcat next)))
+                   (cond
+                     ((or (= target (s:lastcar next-sums))
+                          (= target (s:lastcar next-muls))
+                          (= target (s:lastcar next-cats)))
+                      (list target))
+                     (t
+                        (list (scan-mul (cdr next-cats) target)
+                              (scan-mul (cdr next-sums) target)
+                              (scan-mul (cdr next-muls) target)))))))
+           (scan-tree (op-args test)
+             (list test (scan-mul op-args test))))
+
+    (loop for (test . *original-ops*) in input
+          collect (scan-tree *original-ops* test))))
+
+(defun challenge-2 (input)
+  (prog1 (loop for (test . tree) in (op-graph2 input)
+               when (member test (s:flatten tree))
+                 ;collect tree
+                 sum test
+
+               )
+    (sb-ext:gc :full t)))
+
 ;; 6083020304082 too high
 ;; 6083020304036 just right... OMG that was a hard thinko to track and fix
+
+;; part 2
+;; 59002246606102 -- too high
+;; 59002246504791
+;; 6125766505216 -- too low
 
 ;;; Ideas
 ;;; 1. map the #'* prefix sum and if the final is too little -> exit | NOPE sums before muls can get to the mark
