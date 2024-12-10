@@ -9,17 +9,20 @@
 
 (defun test (input)
   (parse-lines (with-input-from-string (in input)
-     (loop for line = (read-line in nil)
-           while line
-           collect line))))
+                 (loop for line = (read-line in nil)
+                       while line
+                       collect line))))
 
 (defun day8 ()
   (parse-lines (uiop:read-file-lines "day8-input.txt")))
 
 ;;; frequency indicated by single {lower|upper}case letter or digit.
-;;; antinodes at any point that is perfectly in line with two antennas of the same frequency but only when one of the antennas is twice as far away as the other.
-;;;   -> for any pair of antennas with same freq. there are 2 antinodes
-;;;  so if distance between 2 antennas of same freq. is 2x there are antinodes. Each antennas is the midpoint of the other antenna and the anti node.
+;;; antinodes at any point that is perfectly in line with two antennas of the
+;;; same frequency but only when one of the antennas is twice as far away as
+;;; the other.  -> for any pair of antennas with same freq. there are 2
+;;; antinodes so if distance between 2 antennas of same freq. is 2x there are
+;;; antinodes. Each antennas is the midpoint of the other antenna and the anti
+;;; node.
 
 
 ;;; Find all unique antennas and their coordinates.
@@ -28,22 +31,15 @@
   (frequency #\. :type character)
   (coord #C(0 0) :type number))
 
-(defun norm (complex)
-  (sqrt (+ (expt (realpart complex) 2)
-           (expt (imagpart complex) 2))))
-
-(defmethod slope ((a1 number) (a2 complex))
+(defmethod diff ((a1 number) (a2 complex))
   (- a2 a1))
 
-(defmethod slope ((a1 complex) (a2 number))
+(defmethod diff ((a1 complex) (a2 number))
   (- a2 a1))
 
-(defmethod slope ((a1 list) (a2 list))
-  (slope (antenna-coord a2)
-         (antenna-coord a1)))
-
-(defun distance (a1 a2)
-  (norm (slope a1 a2)))
+(defmethod diff ((a1 list) (a2 list))
+  (diff (antenna-coord a2)
+        (antenna-coord a1)))
 
 (defun gather-antennas (input)
   (s:assort
@@ -57,7 +53,7 @@
 
 (defun antipole (a1 a2)
   (+ (antenna-coord a2)
-     (slope a2 a1)))
+     (diff a2 a1)))
 
 (defun gather-antipoles (antenna-list)
   "Antipoles of same-frequency antennas"
@@ -70,6 +66,21 @@
       (s:map-permutations #'add-antipoles antenna-list :length 2)
       antipole-set)))
 
+(defun gather-antipoles2 (antenna-list)
+  (let ((antipole-set ()))
+    (flet ((add-antipoles (antenna-pair)
+             (destructuring-bind (a1 a2) antenna-pair
+               (let ((antipole-line
+                       (loop repeat 100 ;; fire big lasers! we'll clamp it
+                                        ;; later!
+                             with diff = (diff a2 a1)
+                             for i = (+ (antenna-coord a1) diff)
+                               then (+ i diff)
+                             collect i)))
+                 (setf antipole-set (nunion antipole-set antipole-line))))))
+      (s:map-permutations #'add-antipoles antenna-list :length 2)
+      antipole-set)))
+
 (defun c<= (c1 c2)
   (and (<= (realpart c1) (realpart c2))
        (<= (imagpart c2) (imagpart c1))))
@@ -79,14 +90,14 @@
     (not (and (c<= x size)
               (c<= (complex 0 size) x)))))
 
-(defun part1 (input)
+(defun part1 (input gather-fn)
   (let ((size (length input)))
-    (remove-if (out-of-bounder (1- size))
-               (reduce #'union
-                       (mapcar #'gather-antipoles (gather-antennas input))))))
+    (length (remove-if (out-of-bounder (1- size))
+                       (reduce #'union
+                               (mapcar gather-fn (gather-antennas input)))))))
 
-(defun part2 (input)
-  )
+;; part1 (part1 (day8) #'gather-antipoles)
+;; part2 (part1 (day8) #'gather-antipoles2)
 
 (defparameter *test* "............
 ........0...
